@@ -8,13 +8,13 @@ local server = "8.8.8.8"
 local port = 53
 local timeout = 3
 local subnet = "111.111.111.111/24"
-dns = get_dns_resolver(host,server,port,timeout,"udp",false,subnet)
+dns = get_dns_resolver(host,server,port,timeout,"udp",false,nil)
 print("udp,no subnet")
 if dns then for i,v in pairs(dns) do print(v) end end
 dns = get_dns_resolver(host,server,port,timeout,"udp",true,subnet)
 print("\nudp,with subnet")
 if dns then for i,v in pairs(dns) do print(v) end end
-dns = get_dns_resolver(host,server,port,timeout,"tcp",false,subnet)
+dns = get_dns_resolver(host,server,port,timeout,"tcp",false,nil)
 print("\ntcp,no subnet")
 if dns then for i,v in pairs(dns) do print(v) end end
 dns = get_dns_resolver(host,server,port,timeout,"tcp",true,subnet)
