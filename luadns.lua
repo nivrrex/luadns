@@ -1,4 +1,3 @@
-#!/usr/bin/lua
 local lsocket = require("lsocket")
 
 function string.split(str,reps)
@@ -187,7 +186,6 @@ function get_dns_resolver(host,server,port,timeout,tcp,opt,subnet)
         print("error: "..err)
         return nil
     end
-
     if host == "" then
         data = set_dns_query(nil,nil,true)
         data = set_dns_additional_all_without_csubnet(data)
@@ -204,7 +202,6 @@ function get_dns_resolver(host,server,port,timeout,tcp,opt,subnet)
     if tcp == "tcp" then
         data = set_dns_query_tcp(data)
     end
-
     lsocket.select(nil,{client})
     ok, err = client:send(data)
     if not ok then print("error: "..err) end
@@ -224,7 +221,6 @@ function get_dns_resolver(host,server,port,timeout,tcp,opt,subnet)
         local response_authority_rrs = string.sub(response_message,9,10)
         local response_additional_rrs = string.sub(response_message,11,12)
         local response_trans_id = string.byte(string.sub(response_message,1,2))
-
         if response_flags == string.char(0x81,0x80) then
             local count_number = 12
             for i = 1,string.byte(response_questions,1)*255+string.byte(response_questions,2) do
