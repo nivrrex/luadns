@@ -1,1 +1,7 @@
-
+目录下的各个文件，分别对应windows/linux/openwrt(mipsel)平台下的lsocket库的动态链接库
+lsocket.dll.windows.5.1  -  window平台  lua5.1版本
+lsocket.dll.windows.5.3  -  window平台  lua5.3版本
+lsocket.so.linux.5.1     -  linux平台   lua5.1版本
+lsocket.so.linux.5.3     -  linux平台   lua5.3版本
+lsocket.so.mipsel.5.1    -  openwrt(mipsel)平台 lua5.1版本
+lsocket.so.mipsel.5.3    -  openwrt(mipsel)平台 lua5.1版本
