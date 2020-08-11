@@ -3,6 +3,8 @@ Lua dns resolver, supports udp/tcp, supports ECS(edns-client-subnet).
 
 ### example
 ```lua
+require "luadns"
+
 local host = "www.google.com"
 local server = "8.8.8.8"
 local port = 53
