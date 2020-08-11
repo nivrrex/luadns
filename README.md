@@ -1,7 +1,8 @@
 # luadns
 Lua dns resolver, supports udp/tcp, supports ECS (edns-client-subnet).
 
-###运行example
+### example
+```lua
 local host = "www.google.com"
 local server = "8.8.8.8"
 local port = 53
@@ -19,8 +20,10 @@ if dns then for i,v in pairs(dns) do print(v) end end
 dns = get_dns_resolver(host,server,port,timeout,"tcp",true,subnet)
 print("\ntcp,with subnet")
 if dns then for i,v in pairs(dns) do print(v) end end
+```
 
-###运行结果
+### rusult
+```bash
 udp,no subnet
 216.58.200.36
 
@@ -37,6 +40,7 @@ tcp,no subnet
 
 tcp,with subnet
 216.58.196.228
+```
 
-###总结
+### 其它
 直接使用udp连接，有被抢答的可能，建议使用tcp连接
