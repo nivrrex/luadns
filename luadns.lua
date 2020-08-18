@@ -1,3 +1,4 @@
+#!/usr/bin/lua
 local lsocket = require("lsocket")
 
 function string.split(str,reps)
@@ -10,34 +11,8 @@ function string.split(str,reps)
     else return nil
     end
 end
-function str_byte(str)
-    if str == nil then return end
-    local list_byte={}
-    for i=1,string.len(str) do
-        table.insert(list_byte,string.byte(string.sub(str,i,i)))
-    end
-    print( table.concat(list_byte," "))
-end
-function str_byte_find(str,byte)
-    if str == nil then return -1 end
-    local index = -1
-    for i=1,string.len(str) do
-        if string.byte(string.sub(str,i,i)) == byte then
-            index = i
-        end
-    end
-    return index
-end
-function isintable(tbl,value)
-    for k,v in ipairs(tbl) do
-        --if v == value then
-        if string.find(value,v) then
-            return true
-        end
-    end
-    return false
-end
 function get_queries_name(url)
+    if url == "" then return string.char(0x00) end
     local temp = string.split(url,".")
     local queries_name = ""
     for i,v in pairs(temp) do
@@ -171,6 +146,52 @@ end
 function set_dns_query_tcp(dns_query)
     return string.char(0x00,string.len(dns_query)) .. dns_query
 end
+function dns_resolver_message_analysis(response_message,host)
+    if(response_message) then
+        local response_trans_id = string.sub(response_message,1,2)
+        local response_flags =  string.sub(response_message,3,4)
+        local response_questions = string.sub(response_message,5,6)
+        local response_answers_rrs = string.sub(response_message,7,8)
+        local response_authority_rrs = string.sub(response_message,9,10)
+        local response_additional_rrs = string.sub(response_message,11,12)
+
+        if response_flags == string.char(0x81,0x80) then
+            local count_number = 12
+            for i = 1,string.byte(response_questions,1)*255+string.byte(response_questions,2) do
+                count_number = count_number + #get_queries_name(host) + 4
+            end
+            address_table = {}
+            for i = 1,string.byte(response_answers_rrs,1)*255+string.byte(response_answers_rrs,2) do
+				if string.sub(response_message,count_number+1,count_number+1) == string.char(0x00) then
+					local answer_name = string.sub(response_message,count_number+1,count_number+1)  --"0x00 root"
+					local answer_type = string.sub(response_message,count_number+2,count_number+3)  --"type NS"
+					local answer_class = string.sub(response_message,count_number+4,count_number+5)  --"Class IN"
+					local answer_ttl = string.sub(response_message,count_number+6,count_number+9)  --"Time to live"
+					local answer_length = string.sub(response_message,count_number+10,count_number+11)  --"Date length"
+					answer_length = string.byte(answer_length,1)*255+string.byte(answer_length,2)
+					local answer_address = string.sub(response_message,count_number+12,count_number+12+answer_length-1)  --"address"
+					count_number = count_number + string.len(answer_name .. answer_type .. answer_class .. answer_ttl .. 0x00 .. 0x00 .. answer_address)
+				else
+					local answer_name = string.sub(response_message,count_number+1,count_number+2)  --"0xc0 0x0c"
+					local answer_type = string.sub(response_message,count_number+3,count_number+4)  --"type A"
+					local answer_class = string.sub(response_message,count_number+5,count_number+6)  --"Class IN"
+					local answer_ttl = string.sub(response_message,count_number+7,count_number+10)  --"Time to live"
+					local answer_length = string.sub(response_message,count_number+11,count_number+12)  --"Date length"
+					answer_length = string.byte(answer_length,1)*255+string.byte(answer_length,2)
+					local answer_address = string.sub(response_message,count_number+13,count_number+13+answer_length-1)  --"address"
+					if answer_type == string.char(0x00,0x01) then
+						address = string.format("%s.%s.%s.%s",string.byte(answer_address,1),string.byte(answer_address,2),string.byte(answer_address,3),string.byte(answer_address,4))
+						table.insert(address_table,address)
+					end
+					count_number = count_number + string.len(answer_name .. answer_type .. answer_class .. answer_ttl .. 0x00 .. 0x00 .. answer_address)
+				end
+            end
+            return address_table
+        else
+            return nil
+        end
+    end
+end
 function get_dns_resolver(host,server,port,timeout,tcp,opt,subnet)
     if host == nil then return nil end
     if string.find(host, "%d+%.%d+%.%d+%.%d") ~= nil then return host end  --ip v4 address
@@ -202,6 +223,7 @@ function get_dns_resolver(host,server,port,timeout,tcp,opt,subnet)
     if tcp == "tcp" then
         data = set_dns_query_tcp(data)
     end
+
     lsocket.select(nil,{client})
     ok, err = client:send(data)
     if not ok then print("error: "..err) end
@@ -213,40 +235,7 @@ function get_dns_resolver(host,server,port,timeout,tcp,opt,subnet)
     else
         response_message = client:recv()
     end
-    if(response_message) then
-        local response_trans_id = string.sub(response_message,1,2)
-        local response_flags =  string.sub(response_message,3,4)
-        local response_questions = string.sub(response_message,5,6)
-        local response_answers_rrs = string.sub(response_message,7,8)
-        local response_authority_rrs = string.sub(response_message,9,10)
-        local response_additional_rrs = string.sub(response_message,11,12)
-        local response_trans_id = string.byte(string.sub(response_message,1,2))
-        if response_flags == string.char(0x81,0x80) then
-            local count_number = 12
-            for i = 1,string.byte(response_questions,1)*255+string.byte(response_questions,2) do
-                count_number = count_number + #get_queries_name(host) + 4
-            end
-            address_table = {}
-            for i = 1,string.byte(response_answers_rrs,1)*255+string.byte(response_answers_rrs,2) do
-                local answer_name = string.sub(response_message,count_number+1,count_number+2)  --"0xc0 0x0c"
-                local answer_type = string.sub(response_message,count_number+3,count_number+4)  --"type A"
-                local answer_class = string.sub(response_message,count_number+5,count_number+6)  --"Class IN"
-                local answer_ttl = string.sub(response_message,count_number+7,count_number+10)  --"Time to live"
-                local answer_length = string.sub(response_message,count_number+11,count_number+12)  --"Date length"
-                answer_length = string.byte(answer_length,1)*255+string.byte(answer_length,2)
-                local answer_address = string.sub(response_message,count_number+13,count_number+13+answer_length-1)  --"address"
-                if answer_type == string.char(0x00,0x01) then
-                    address = string.format("%s.%s.%s.%s",string.byte(answer_address,1),string.byte(answer_address,2),string.byte(answer_address,3),string.byte(answer_address,4))
-                    --return address --return the first address
-                    table.insert(address_table,address)
-                end
-                count_number = count_number + string.len(answer_name .. answer_type .. answer_class .. answer_ttl .. 0x00 .. 0x00 .. answer_address)
-            end
-            return address_table
-        else
-            return nil
-        end
-    end
+    dns = dns_resolver_message_analysis(response_message,host)
     client:close()
     return dns
 end
